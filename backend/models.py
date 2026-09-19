@@ -24,4 +24,14 @@ class Lot(Base):
     price_min = Column(Float, nullable=True)
     price_max = Column(Float, nullable=True)
     recycler_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    pool_id = Column(Integer, ForeignKey("pools.id"), nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+class Pool(Base):
+    __tablename__ = "pools"
+    id = Column(Integer, primary_key=True, index=True)
+    material_type = Column(String)
+    total_weight_kg = Column(Float, default=0)
+    status = Column(String, default="open")
+    recycler_id = Column(Integer, ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
