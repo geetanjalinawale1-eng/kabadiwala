@@ -294,3 +294,24 @@ def verify_otp(phone: str, otp: str, db: Session = Depends(get_db)):
         "name": user.name,
         "role": user.role
     }
+
+from fastapi import File, UploadFile
+
+@app.post("/lots/{lot_id}/upload-photo")
+async def upload_photo(lot_id: int, file: UploadFile = File(...), db: Session = Depends(get_db)):
+    lot = db.query(models.Lot).filter(models.Lot.id == lot_id).first()
+    if not lot:
+        return {"error": "Lot not found"}
+
+    contents = await file.read()
+    photo_base64 = base64.b64encode(contents).decode()
+
+    lot.photo_url = f"data:{file.content_type};base64,{photo_base64}"
+    db.commit()
+    db.refresh(lot)
+
+    return {
+        "lot_id": lot.id,
+        "message": "Photo uploaded successfully",
+        "photo_size_kb": round(len(contents) / 1024, 2)
+    }
