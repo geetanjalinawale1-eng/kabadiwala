@@ -268,3 +268,29 @@ def fraud_check(lot_id: int, db: Session = Depends(get_db)):
         "status": status,
         "flags": flags
     }
+
+MOCK_OTP = "1234"
+
+@app.post("/auth/send-otp")
+def send_otp(phone: str):
+    return {"message": f"OTP sent to {phone}", "mock_otp": MOCK_OTP}
+
+@app.post("/auth/verify-otp")
+def verify_otp(phone: str, otp: str, db: Session = Depends(get_db)):
+    if otp != MOCK_OTP:
+        return {"success": False, "message": "Invalid OTP"}
+
+    user = db.query(models.User).filter(models.User.phone == phone).first()
+    if not user:
+        return {"success": False, "message": "No user found with this phone number, please register first"}
+
+    user.verified = True
+    db.commit()
+    db.refresh(user)
+
+    return {
+        "success": True,
+        "user_id": user.id,
+        "name": user.name,
+        "role": user.role
+    }
