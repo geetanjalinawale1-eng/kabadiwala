@@ -176,3 +176,57 @@ def handover_lot(lot_id: int, recycler_id: int, final_price: float, db: Session 
         "tamper_hash": tamper_hash,
         "qr_code_base64": qr_base64
     }
+
+@app.get("/dashboard/collector/{collector_id}")
+def collector_dashboard(collector_id: int, db: Session = Depends(get_db)):
+    lots = db.query(models.Lot).filter(models.Lot.collector_id == collector_id).all()
+    total_earnings = sum(l.price_max or 0 for l in lots if l.status == "handed_over")
+    return {
+        "collector_id": collector_id,
+        "total_lots": len(lots),
+        "total_earnings": total_earnings,
+        "lots": [
+            {
+                "lot_id": l.id,
+                "material_type": l.material_type,
+                "weight_kg": l.weight_kg,
+                "status": l.status,
+                "price": l.price_max
+            } for l in lots
+        ]
+    }
+
+@app.get("/dashboard/recycler/{recycler_id}")
+def recycler_dashboard(recycler_id: int, db: Session = Depends(get_db)):
+    lots = db.query(models.Lot).filter(models.Lot.recycler_id == recycler_id).all()
+    return {
+        "recycler_id": recycler_id,
+        "total_lots_received": len(lots),
+        "lots": [
+            {
+                "lot_id": l.id,
+                "material_type": l.material_type,
+                "weight_kg": l.weight_kg,
+                "status": l.status,
+                "collector_id": l.collector_id
+            } for l in lots
+        ]
+    }
+
+@app.get("/dashboard/admin")
+def admin_dashboard(db: Session = Depends(get_db)):
+    total_collectors = db.query(models.User).filter(models.User.role == "collector").count()
+    total_recyclers = db.query(models.User).filter(models.User.role == "recycler").count()
+    total_lots = db.query(models.Lot).count()
+    total_weight = sum(l.weight_kg or 0 for l in db.query(models.Lot).all())
+    handed_over = db.query(models.Lot).filter(models.Lot.status == "handed_over").count()
+    active_pools = db.query(models.Pool).filter(models.Pool.status == "open").count()
+
+    return {
+        "total_collectors": total_collectors,
+        "total_recyclers": total_recyclers,
+        "total_lots": total_lots,
+        "total_weight_collected_kg": total_weight,
+        "lots_handed_over": handed_over,
+        "active_open_pools": active_pools
+    }
