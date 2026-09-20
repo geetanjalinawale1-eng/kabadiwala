@@ -131,3 +131,48 @@ def match_recyclers(material_type: str, db: Session = Depends(get_db)):
         {"recycler_id": r.id, "name": r.name, "accepted_materials": r.accepted_materials}
         for r in recyclers
     ]
+
+import qrcode
+import hashlib
+import json
+import io
+import base64
+
+@app.post("/lots/{lot_id}/handover")
+def handover_lot(lot_id: int, recycler_id: int, final_price: float, db: Session = Depends(get_db)):
+    lot = db.query(models.Lot).filter(models.Lot.id == lot_id).first()
+    if not lot:
+        return {"error": "Lot not found"}
+
+    lot.status = "handed_over"
+    lot.recycler_id = recycler_id
+    lot.price_min = final_price
+    lot.price_max = final_price
+
+    payload = {
+        "lot_id": lot.id,
+        "material": lot.material_type,
+        "weight_kg": lot.weight_kg,
+        "collector_id": lot.collector_id,
+        "recycler_id": recycler_id,
+        "final_price": final_price
+    }
+
+    payload_str = json.dumps(payload, sort_keys=True)
+    tamper_hash = hashlib.sha256(payload_str.encode()).hexdigest()
+
+    qr = qrcode.make(payload_str)
+    buffer = io.BytesIO()
+    qr.save(buffer, format="PNG")
+    qr_base64 = base64.b64encode(buffer.getvalue()).decode()
+
+    db.commit()
+    db.refresh(lot)
+
+    return {
+        "lot_id": lot.id,
+        "status": lot.status,
+        "payload": payload,
+        "tamper_hash": tamper_hash,
+        "qr_code_base64": qr_base64
+    }
