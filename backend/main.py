@@ -21,13 +21,15 @@ def root():
 POOL_THRESHOLD_KG = 50  # minimum weight a recycler wants per pickup
 
 @app.post("/lots/create")
-def create_lot(collector_id: int, material_type: str, weight_kg: float, condition: str, db: Session = Depends(get_db)):
+def create_lot(collector_id: int, material_type: str, weight_kg: float, condition: str, lat: float = None, lng: float = None, db: Session = Depends(get_db)):
     lot = models.Lot(
         collector_id=collector_id,
         material_type=material_type,
         weight_kg=weight_kg,
         condition=condition,
-        status="created"
+        status="created",
+        lat=lat,
+        lng=lng
     )
 
     if weight_kg < POOL_THRESHOLD_KG:
@@ -104,13 +106,15 @@ def price_estimate(material_type: str, weight_kg: float, condition: str):
     }
 
 @app.post("/recyclers/create")
-def create_recycler(name: str, phone: str, accepted_materials: str, db: Session = Depends(get_db)):
+def create_recycler(name: str, phone: str, accepted_materials: str, lat: float = None, lng: float = None, db: Session = Depends(get_db)):
     recycler = models.User(
         name=name,
         phone=phone,
         role="recycler",
         accepted_materials=accepted_materials,
-        verified=True
+        verified=True,
+        lat=lat,
+        lng=lng
     )
     db.add(recycler)
     db.commit()
@@ -122,15 +126,26 @@ def create_recycler(name: str, phone: str, accepted_materials: str, db: Session 
     }
 
 @app.get("/recyclers/match")
-def match_recyclers(material_type: str, db: Session = Depends(get_db)):
+def match_recyclers(material_type: str, lat: float = None, lng: float = None, db: Session = Depends(get_db)):
     recyclers = db.query(models.User).filter(
         models.User.role == "recycler",
         models.User.accepted_materials.contains(material_type)
     ).all()
-    return [
-        {"recycler_id": r.id, "name": r.name, "accepted_materials": r.accepted_materials}
-        for r in recyclers
-    ]
+
+    results = []
+    for r in recyclers:
+        distance_km = None
+        if lat is not None and lng is not None and r.lat is not None and r.lng is not None:
+            distance_km = round(((r.lat - lat) ** 2 + (r.lng - lng) ** 2) ** 0.5 * 111, 2)
+        results.append({
+            "recycler_id": r.id,
+            "name": r.name,
+            "accepted_materials": r.accepted_materials,
+            "distance_km": distance_km
+        })
+
+    results.sort(key=lambda x: (x["distance_km"] is None, x["distance_km"]))
+    return results
 
 import qrcode
 import hashlib

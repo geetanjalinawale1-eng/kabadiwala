@@ -11,6 +11,8 @@ class User(Base):
     language_pref = Column(String, default="en")
     verified = Column(Boolean, default=False)
     accepted_materials = Column(String, nullable=True)  # comma-separated, e.g. "PCB,battery,motor"
+    lat = Column(Float, nullable=True)
+    lng = Column(Float, nullable=True)
 
 class Lot(Base):
     __tablename__ = "lots"
@@ -21,6 +23,8 @@ class Lot(Base):
     weight_kg = Column(Float)
     condition = Column(String)
     photo_url = Column(String, nullable=True)
+    lat = Column(Float, nullable=True)
+    lng = Column(Float, nullable=True)
     status = Column(String, default="created")
     price_min = Column(Float, nullable=True)
     price_max = Column(Float, nullable=True)
