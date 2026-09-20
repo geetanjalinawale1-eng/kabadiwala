@@ -72,3 +72,33 @@ def create_user(name: str, phone: str, role: str, db: Session = Depends(get_db))
     db.commit()
     db.refresh(user)
     return {"user_id": user.id, "name": user.name, "role": user.role}
+
+BASE_RATES = {
+    "PCB": 150,
+    "copper_cable": 400,
+    "aluminium_cable": 250,
+    "battery": 80,
+    "LCD": 100,
+    "CRT": 50,
+    "motor": 200,
+    "other": 60
+}
+
+CONDITION_MULTIPLIER = {
+    "good": 1.0,
+    "damaged": 0.7,
+    "scrap": 0.5
+}
+
+@app.get("/price-estimate")
+def price_estimate(material_type: str, weight_kg: float, condition: str):
+    base_rate = BASE_RATES.get(material_type, BASE_RATES["other"])
+    multiplier = CONDITION_MULTIPLIER.get(condition, 1.0)
+    price = base_rate * weight_kg * multiplier
+    return {
+        "material_type": material_type,
+        "weight_kg": weight_kg,
+        "condition": condition,
+        "price_min": round(price * 0.9, 2),
+        "price_max": round(price * 1.1, 2)
+    }
