@@ -10,6 +10,7 @@ class User(Base):
     role = Column(String)
     language_pref = Column(String, default="en")
     verified = Column(Boolean, default=False)
+    accepted_materials = Column(String, nullable=True)  # comma-separated, e.g. "PCB,battery,motor"
 
 class Lot(Base):
     __tablename__ = "lots"

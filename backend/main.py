@@ -102,3 +102,32 @@ def price_estimate(material_type: str, weight_kg: float, condition: str):
         "price_min": round(price * 0.9, 2),
         "price_max": round(price * 1.1, 2)
     }
+
+@app.post("/recyclers/create")
+def create_recycler(name: str, phone: str, accepted_materials: str, db: Session = Depends(get_db)):
+    recycler = models.User(
+        name=name,
+        phone=phone,
+        role="recycler",
+        accepted_materials=accepted_materials,
+        verified=True
+    )
+    db.add(recycler)
+    db.commit()
+    db.refresh(recycler)
+    return {
+        "recycler_id": recycler.id,
+        "name": recycler.name,
+        "accepted_materials": recycler.accepted_materials
+    }
+
+@app.get("/recyclers/match")
+def match_recyclers(material_type: str, db: Session = Depends(get_db)):
+    recyclers = db.query(models.User).filter(
+        models.User.role == "recycler",
+        models.User.accepted_materials.contains(material_type)
+    ).all()
+    return [
+        {"recycler_id": r.id, "name": r.name, "accepted_materials": r.accepted_materials}
+        for r in recyclers
+    ]
