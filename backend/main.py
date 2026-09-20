@@ -230,3 +230,41 @@ def admin_dashboard(db: Session = Depends(get_db)):
         "lots_handed_over": handed_over,
         "active_open_pools": active_pools
     }
+
+@app.get("/lots/{lot_id}/fraud-check")
+def fraud_check(lot_id: int, db: Session = Depends(get_db)):
+    lot = db.query(models.Lot).filter(models.Lot.id == lot_id).first()
+    if not lot:
+        return {"error": "Lot not found"}
+
+    flags = []
+
+    avg_weight = db.query(models.Lot).filter(models.Lot.material_type == lot.material_type).all()
+    if avg_weight:
+        weights = [l.weight_kg for l in avg_weight if l.weight_kg]
+        if weights:
+            average = sum(weights) / len(weights)
+            if lot.weight_kg > average * 3:
+                flags.append("Unusually high weight compared to average for this material")
+
+    base_rate = BASE_RATES.get(lot.material_type, BASE_RATES["other"])
+    expected_price = base_rate * lot.weight_kg
+    if lot.price_max and (lot.price_max < expected_price * 0.5 or lot.price_max > expected_price * 1.8):
+        flags.append("Final price significantly differs from expected fair price range")
+
+    duplicates = db.query(models.Lot).filter(
+        models.Lot.collector_id == lot.collector_id,
+        models.Lot.material_type == lot.material_type,
+        models.Lot.weight_kg == lot.weight_kg,
+        models.Lot.id != lot.id
+    ).count()
+    if duplicates > 0:
+        flags.append("Possible duplicate lot detected (same collector, material, and weight)")
+
+    status = "flagged_for_review" if flags else "clean"
+
+    return {
+        "lot_id": lot.id,
+        "status": status,
+        "flags": flags
+    }
