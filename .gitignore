@@ -1,8 +1,33 @@
+# Environment & Secrets (NEVER push secrets/keys!)
+.env
+.env.*
+*.pem
+firebase-service-account.json
+
+# Python Virtual Environment
 venv/
+env/
+ENV/
+.venv/
+
+# Python Bytecode & Cache
 __pycache__/
 *.pyc
-.env
-build/
-.dart_tool/
-*.g.dart
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+
+# Local Storage & Uploads
+uploads/*
+!uploads/.gitkeep
+
+# Local Databases & Logs
+*.db
+*.sqlite3
+*.log
+
+# IDE & Operating System Files
 .DS_Store
+.vscode/
+.idea/
