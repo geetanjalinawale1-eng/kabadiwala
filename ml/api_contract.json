@@ -1,0 +1,21 @@
+{
+  "endpoint": "POST /classify",
+  "request": {
+    "content_type": "multipart/form-data",
+    "field": "image"
+  },
+  "response": {
+    "material": "pcb",
+    "confidence": 0.91
+  },
+  "classes": [
+    "pcb",
+    "copper_cable",
+    "battery",
+    "lcd_crt",
+    "motor",
+    "mobile_phone",
+    "charger_adapter",
+    "keyboard_mouse"
+  ]
+}

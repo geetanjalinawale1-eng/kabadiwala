@@ -1,0 +1,8 @@
+pcb
+copper_cable
+battery
+lcd_crt
+motor
+mobile_phone
+charger_adapter
+keyboard_mouse

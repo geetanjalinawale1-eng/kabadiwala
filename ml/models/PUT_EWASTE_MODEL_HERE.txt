@@ -1,0 +1,6 @@
+Place the REAL trained model here.
+
+Filename:
+ewaste_mobilenetv3.tflite
+
+Do not rename the old cardboard/glass/metal/paper/plastic model and call it e-waste AI.
